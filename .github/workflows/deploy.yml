@@ -1,4 +1,4 @@
-name: Deploy
+name: Deploy PHP Application
 
 on:
   push:
@@ -7,27 +7,33 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
       with:
-        node-version: '18.x'
-        cache: 'npm'
+        php-version: '8.1'
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, iconv, json, mbstring, pdo
 
-    - name: Install dependencies
-      run: npm install
+    - name: Validate composer.json and composer.lock
+      run: |
+        if [ -f "composer.json" ]; then
+          composer validate
+        fi
 
-    - name: Build
-      run: npm run build
+    - name: Install Dependencies
+      run: |
+        if [ -f "composer.json" ]; then
+          composer install --prefer-dist --no-progress
+        fi
 
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       if: github.ref == 'refs/heads/main'
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./dist
+        publish_dir: .
